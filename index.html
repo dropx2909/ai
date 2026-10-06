@@ -1,225 +1,62 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Image Classifier</title>
-
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
-
-    <style>
-        * { box-sizing: border-box; }
-
-        body {
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: Arial, sans-serif;
-            background: #0f172a;
-            color: white;
-        }
-
-        .container {
-            width: min(92vw, 440px);
-            padding: 30px;
-            background: #1e293b;
-            border-radius: 20px;
-            text-align: center;
-            box-shadow: 0 20px 50px rgba(0,0,0,.4);
-        }
-
-        h1 { margin: 0 0 10px; }
-        .description { color: #94a3b8; margin-bottom: 25px; }
-
-        input { display: none; }
-
-        .upload-button, #predictButton {
-            display: block;
-            width: 100%;
-            padding: 14px 20px;
-            border: 0;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .upload-button {
-            background: #3b82f6;
-            margin-bottom: 20px;
-        }
-
-        .upload-button:hover { background: #2563eb; }
-
-        #preview {
-            width: 100%;
-            max-height: 280px;
-            object-fit: contain;
-            border-radius: 12px;
-            display: none;
-            margin-bottom: 20px;
-        }
-
-        #predictButton {
-            background: #22c55e;
-            color: white;
-            display: none;
-        }
-
-        #predictButton:hover { background: #16a34a; }
-        #predictButton:disabled { background: #475569; cursor: not-allowed; }
-
-        #status {
-            margin: 20px 0;
-            color: #94a3b8;
-        }
-
-        .result { margin-top: 15px; text-align: left; }
-
-        .result-item { margin-bottom: 14px; }
-
-        .result-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-        }
-
-        .class-name { font-weight: bold; }
-        .percent { color: #94a3b8; }
-
-        .bar {
-            width: 100%;
-            height: 10px;
-            background: #334155;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .bar-fill {
-            height: 100%;
-            background: #3b82f6;
-            border-radius: 10px;
-            transition: width .5s;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vision AI</title>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:Arial,sans-serif;color:#f5f3ff;background:radial-gradient(circle at 15% 15%,rgba(124,58,237,.35),transparent 30%),radial-gradient(circle at 85% 85%,rgba(14,165,233,.25),transparent 30%),linear-gradient(135deg,#09051a,#160b2e 55%,#071526);display:flex;justify-content:center;align-items:center;padding:24px}
+.container{width:min(94vw,520px);padding:32px;border:1px solid rgba(255,255,255,.12);border-radius:28px;background:rgba(20,13,43,.78);backdrop-filter:blur(18px);box-shadow:0 25px 80px rgba(0,0,0,.45)}
+.header{text-align:center;margin-bottom:26px}.logo{width:58px;height:58px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;border-radius:18px;font-size:28px;background:linear-gradient(135deg,#8b5cf6,#06b6d4);box-shadow:0 10px 30px rgba(124,58,237,.35)}
+h1{margin:0;font-size:30px}.subtitle{margin-top:8px;color:#aaa3c7}
+input{display:none}
+.upload{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:150px;border:2px dashed rgba(167,139,250,.4);border-radius:20px;cursor:pointer;transition:.25s;background:rgba(255,255,255,.035)}
+.upload:hover{border-color:#a78bfa;background:rgba(139,92,246,.09);transform:translateY(-2px)}
+.upload-icon{font-size:38px;margin-bottom:8px}.upload-title{font-weight:bold;font-size:17px}.upload-hint{margin-top:6px;color:#9189aa;font-size:13px}
+#preview{display:none;width:100%;max-height:300px;object-fit:contain;border-radius:18px;margin-top:18px;background:#080510}
+button{width:100%;border:0;border-radius:14px;padding:15px;margin-top:18px;font-size:16px;font-weight:bold;color:white;cursor:pointer;background:linear-gradient(135deg,#8b5cf6,#6366f1);box-shadow:0 10px 25px rgba(99,102,241,.25);transition:.2s}
+button:hover{transform:translateY(-2px);filter:brightness(1.08)}button:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.status{text-align:center;margin:20px 0 4px;color:#aaa3c7;min-height:20px}
+.loader{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.25);border-top-color:#a78bfa;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-3px;margin-right:7px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.results{margin-top:22px}.result-item{padding:14px;margin-bottom:12px;border-radius:15px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.07)}
+.result-header{display:flex;justify-content:space-between;gap:10px;margin-bottom:9px}.class-name{font-weight:bold}.percent{color:#c4b5fd;font-weight:bold}
+.bar{height:9px;overflow:hidden;border-radius:20px;background:#2a2142}.bar-fill{height:100%;width:0;border-radius:20px;background:linear-gradient(90deg,#8b5cf6,#06b6d4);transition:width .7s ease}
+.footer{text-align:center;margin-top:22px;color:#716985;font-size:12px}
+@media(max-width:500px){body{padding:12px}.container{padding:22px;border-radius:22px}h1{font-size:26px}}
+</style>
 </head>
-
 <body>
 <div class="container">
-    <h1>AI Image Classifier</h1>
-    <div class="description">Загрузите изображение для анализа</div>
-
-    <label class="upload-button" for="imageInput">
-        📁 Выбрать изображение
-    </label>
-
-    <input type="file" id="imageInput" accept="image/*">
-
-    <img id="preview" alt="Предпросмотр">
-
-    <button id="predictButton">🔍 Анализировать</button>
-
-    <div id="status">Модель загружается...</div>
-    <div id="results" class="result"></div>
+<div class="header"><div class="logo">✦</div><h1>Vision AI</h1><div class="subtitle">Интеллектуальный анализ изображения</div></div>
+<label class="upload" for="imageInput"><div class="upload-icon">🖼️</div><div class="upload-title">Выберите изображение</div><div class="upload-hint">JPG, PNG или другое изображение</div></label>
+<input id="imageInput" type="file" accept="image/*">
+<img id="preview" alt="Предпросмотр изображения">
+<button id="predictButton" style="display:none">✨ Анализировать изображение</button>
+<div id="status" class="status"><span class="loader"></span>Загрузка AI-модели...</div>
+<div id="results" class="results"></div>
+<div class="footer">Powered by Google Teachable Machine</div>
 </div>
-
 <script>
-    const MODEL_URL =
-        "https://teachablemachine.withgoogle.com/models/kYCo4Yazp/";
-
-    let model = null;
-
-    const imageInput = document.getElementById("imageInput");
-    const preview = document.getElementById("preview");
-    const predictButton = document.getElementById("predictButton");
-    const status = document.getElementById("status");
-    const results = document.getElementById("results");
-
-    async function loadModel() {
-        try {
-            status.textContent = "Загрузка AI-модели...";
-
-            model = await tmImage.load(
-                MODEL_URL + "model.json",
-                MODEL_URL + "metadata.json"
-            );
-
-            status.textContent = "Модель готова ✓";
-        } catch (error) {
-            console.error(error);
-            status.textContent = "Ошибка загрузки модели";
-        }
-    }
-
-    imageInput.addEventListener("change", function () {
-        const file = this.files[0];
-        if (!file) return;
-
-        preview.src = URL.createObjectURL(file);
-        preview.style.display = "block";
-        predictButton.style.display = "block";
-        results.innerHTML = "";
-        status.textContent = "Изображение загружено";
-    });
-
-    predictButton.addEventListener("click", async function () {
-        if (!model) {
-            status.textContent = "Модель ещё не загрузилась";
-            return;
-        }
-
-        predictButton.disabled = true;
-        status.textContent = "AI анализирует изображение...";
-        results.innerHTML = "";
-
-        try {
-            const predictions = await model.predict(preview);
-
-            predictions.sort(
-                (a, b) => b.probability - a.probability
-            );
-
-            predictions.forEach(prediction => {
-                const percent =
-                    (prediction.probability * 100).toFixed(1);
-
-                const item = document.createElement("div");
-                item.className = "result-item";
-
-                item.innerHTML = `
-                    <div class="result-header">
-                        <span class="class-name">
-                            ${prediction.className}
-                        </span>
-                        <span class="percent">
-                            ${percent}%
-                        </span>
-                    </div>
-
-                    <div class="bar">
-                        <div
-                            class="bar-fill"
-                            style="width: ${percent}%"
-                        ></div>
-                    </div>
-                `;
-
-                results.appendChild(item);
-            });
-
-            status.textContent = "Анализ завершён ✓";
-        } catch (error) {
-            console.error(error);
-            status.textContent = "Ошибка анализа изображения";
-        }
-
-        predictButton.disabled = false;
-    });
-
-    loadModel();
+const MODEL_URL="https://teachablemachine.withgoogle.com/models/1HbLMDDr3/";
+let model=null;
+const imageInput=document.getElementById("imageInput"),preview=document.getElementById("preview"),predictButton=document.getElementById("predictButton"),status=document.getElementById("status"),results=document.getElementById("results");
+async function loadModel(){
+try{status.innerHTML='<span class="loader"></span>Загрузка AI-модели...';model=await tmImage.load(MODEL_URL+"model.json",MODEL_URL+"metadata.json");status.textContent="Модель готова ✓";}
+catch(error){console.error(error);status.textContent="Не удалось загрузить модель";}
+}
+imageInput.addEventListener("change",function(){const file=this.files[0];if(!file)return;preview.src=URL.createObjectURL(file);preview.style.display="block";predictButton.style.display="block";results.innerHTML="";status.textContent="Изображение готово к анализу";});
+predictButton.addEventListener("click",async function(){
+if(!model){status.textContent="Модель ещё загружается";return}
+predictButton.disabled=true;status.innerHTML='<span class="loader"></span>AI анализирует изображение...';results.innerHTML="";
+try{const predictions=await model.predict(preview);predictions.sort((a,b)=>b.probability-a.probability);predictions.forEach((prediction,index)=>{const percent=(prediction.probability*100).toFixed(1);const item=document.createElement("div");item.className="result-item";item.innerHTML=`<div class="result-header"><span class="class-name">${index===0?"★ ":""}${prediction.className}</span><span class="percent">${percent}%</span></div><div class="bar"><div class="bar-fill" style="width:${percent}%"></div></div>`;results.appendChild(item)});status.textContent="Анализ завершён ✓";}
+catch(error){console.error(error);status.textContent="Произошла ошибка при анализе"}
+predictButton.disabled=false;
+});
+loadModel();
 </script>
 </body>
 </html>
