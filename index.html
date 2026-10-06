@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Classifier</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: white;
+        }
+
+        .container {
+            width: min(92vw, 440px);
+            padding: 30px;
+            background: #1e293b;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,.4);
+        }
+
+        h1 { margin: 0 0 10px; }
+        .description { color: #94a3b8; margin-bottom: 25px; }
+
+        input { display: none; }
+
+        .upload-button, #predictButton {
+            display: block;
+            width: 100%;
+            padding: 14px 20px;
+            border: 0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .upload-button {
+            background: #3b82f6;
+            margin-bottom: 20px;
+        }
+
+        .upload-button:hover { background: #2563eb; }
+
+        #preview {
+            width: 100%;
+            max-height: 280px;
+            object-fit: contain;
+            border-radius: 12px;
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        #predictButton {
+            background: #22c55e;
+            color: white;
+            display: none;
+        }
+
+        #predictButton:hover { background: #16a34a; }
+        #predictButton:disabled { background: #475569; cursor: not-allowed; }
+
+        #status {
+            margin: 20px 0;
+            color: #94a3b8;
+        }
+
+        .result { margin-top: 15px; text-align: left; }
+
+        .result-item { margin-bottom: 14px; }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .class-name { font-weight: bold; }
+        .percent { color: #94a3b8; }
+
+        .bar {
+            width: 100%;
+            height: 10px;
+            background: #334155;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: #3b82f6;
+            border-radius: 10px;
+            transition: width .5s;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <h1>AI Image Classifier</h1>
+    <div class="description">Загрузите изображение для анализа</div>
+
+    <label class="upload-button" for="imageInput">
+        📁 Выбрать изображение
+    </label>
+
+    <input type="file" id="imageInput" accept="image/*">
+
+    <img id="preview" alt="Предпросмотр">
+
+    <button id="predictButton">🔍 Анализировать</button>
+
+    <div id="status">Модель загружается...</div>
+    <div id="results" class="result"></div>
+</div>
+
+<script>
+    const MODEL_URL =
+        "https://teachablemachine.withgoogle.com/models/kYCo4Yazp/";
+
+    let model = null;
+
+    const imageInput = document.getElementById("imageInput");
+    const preview = document.getElementById("preview");
+    const predictButton = document.getElementById("predictButton");
+    const status = document.getElementById("status");
+    const results = document.getElementById("results");
+
+    async function loadModel() {
+        try {
+            status.textContent = "Загрузка AI-модели...";
+
+            model = await tmImage.load(
+                MODEL_URL + "model.json",
+                MODEL_URL + "metadata.json"
+            );
+
+            status.textContent = "Модель готова ✓";
+        } catch (error) {
+            console.error(error);
+            status.textContent = "Ошибка загрузки модели";
+        }
+    }
+
+    imageInput.addEventListener("change", function () {
+        const file = this.files[0];
+        if (!file) return;
+
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = "block";
+        predictButton.style.display = "block";
+        results.innerHTML = "";
+        status.textContent = "Изображение загружено";
+    });
+
+    predictButton.addEventListener("click", async function () {
+        if (!model) {
+            status.textContent = "Модель ещё не загрузилась";
+            return;
+        }
+
+        predictButton.disabled = true;
+        status.textContent = "AI анализирует изображение...";
+        results.innerHTML = "";
+
+        try {
+            const predictions = await model.predict(preview);
+
+            predictions.sort(
+                (a, b) => b.probability - a.probability
+            );
+
+            predictions.forEach(prediction => {
+                const percent =
+                    (prediction.probability * 100).toFixed(1);
+
+                const item = document.createElement("div");
+                item.className = "result-item";
+
+                item.innerHTML = `
+                    <div class="result-header">
+                        <span class="class-name">
+                            ${prediction.className}
+                        </span>
+                        <span class="percent">
+                            ${percent}%
+                        </span>
+                    </div>
+
+                    <div class="bar">
+                        <div
+                            class="bar-fill"
+                            style="width: ${percent}%"
+                        ></div>
+                    </div>
+                `;
+
+                results.appendChild(item);
+            });
+
+            status.textContent = "Анализ завершён ✓";
+        } catch (error) {
+            console.error(error);
+            status.textContent = "Ошибка анализа изображения";
+        }
+
+        predictButton.disabled = false;
+    });
+
+    loadModel();
+</script>
+</body>
+</html>
